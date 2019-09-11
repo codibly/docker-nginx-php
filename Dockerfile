@@ -72,13 +72,16 @@ RUN docker-php-ext-install \
   xsl \
   zip
 
+COPY scripts/xoff.sh /usr/bin/xoff
+COPY scripts/xon.sh /usr/bin/xon
+
 # INSTALL XDEBUG
 RUN set -x \
     && pecl install xdebug-beta \
     && bash -c 'echo -e "\n[xdebug]\nzend_extension=xdebug.so\nxdebug.remote_enable=1\nxdebug.remote_connect_back=1" >> /usr/local/etc/php/conf.d/xdebug.ini' \
     # Add global functions for turn on/off xdebug
-    && echo "mv /usr/local/etc/php/conf.d/xdebug.ini /usr/local/etc/php/conf.d/xdebug.off && pkill -o -USR2 php-fpm" > /usr/bin/xoff && chmod +x /usr/bin/xoff \
-    && echo "mv /usr/local/etc/php/conf.d/xdebug.off /usr/local/etc/php/conf.d/xdebug.ini && pkill -o -USR2 php-fpm" > /usr/bin/xon && chmod +x /usr/bin/xon  \
+    && chmod +x /usr/bin/xoff \
+    && chmod +x /usr/bin/xon \
     # turn off xdebug as default
     && mv /usr/local/etc/php/conf.d/xdebug.ini /usr/local/etc/php/conf.d/xdebug.off  \
     && echo 'PS1="[\$(test -e /usr/local/etc/php/conf.d/xdebug.off && echo XOFF || echo XON)] $HC$FYEL[ $FBLE${debian_chroot:+($debian_chroot)}\u$FYEL: $FBLE\w $FYEL]\\$ $RS"' | tee /etc/bash.bashrc /etc/skel/.bashrc
