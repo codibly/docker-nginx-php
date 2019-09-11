@@ -1,0 +1,158 @@
+FROM php:7.3-fpm
+
+MAINTAINER Codibly <office@codibly.com>
+
+WORKDIR /opt/app/
+
+ENV USER_LOGIN    www-data
+ENV USER_HOME_DIR /home/$USER_LOGIN
+ENV APP_DIR       /opt/app
+
+############ PHP-FPM ############
+
+# CREATE WWW-DATA HOME DIRECTORY
+RUN set -x \
+    && mkdir /home/www-data \
+    && chown -R www-data:www-data /home/www-data \
+    && usermod -u 1000 --shell /bin/bash -d /home/www-data www-data \
+    && groupmod -g 1000 www-data
+
+# INSTALL ESSENTIALS LIBS TO COMPILE PHP EXTENSTIONS
+RUN set -x \
+    && apt-get update \
+    && apt-get install --no-install-recommends --no-install-suggests -y \
+        # for zip ext
+        zlib1g-dev libzip-dev\
+        # for pg_pgsql ext
+        libpq-dev \
+        # for soap and xml related ext
+        libxml2-dev \
+        # for xslt ext
+        libxslt-dev \
+        # for gd ext
+        libjpeg-dev libpng-dev \
+        # for intl ext
+        libicu-dev openssl \
+        # openssl
+        libssl-dev \
+        # htop for resource monitoring
+        htop \
+        # for pkill
+        procps \
+        vim iputils-ping curl iproute2 \
+        #
+        supervisor
+
+# INSTALL PHP EXTENSIONS VIA docker-php-ext-install SCRIPT
+RUN docker-php-ext-install \
+  bcmath \
+  calendar \
+  ctype \
+  dba \
+  dom \
+  exif \
+  fileinfo \
+  ftp \
+  gettext \
+  gd \
+  hash \
+  iconv \
+  intl \
+  mbstring \
+  opcache \
+  pcntl \
+  pdo \
+  pdo_pgsql \
+  pdo_mysql \
+  posix \
+  session \
+  simplexml \
+  soap \
+  sockets \
+  xsl \
+  zip
+
+# INSTALL XDEBUG
+RUN set -x \
+    && pecl install xdebug-beta \
+    && bash -c 'echo -e "\n[xdebug]\nzend_extension=xdebug.so\nxdebug.remote_enable=1\nxdebug.remote_connect_back=1" >> /usr/local/etc/php/conf.d/xdebug.ini' \
+    # Add global functions for turn on/off xdebug
+    && echo "mv /usr/local/etc/php/conf.d/xdebug.ini /usr/local/etc/php/conf.d/xdebug.off && pkill -o -USR2 php-fpm" > /usr/bin/xoff && chmod +x /usr/bin/xoff \
+    && echo "mv /usr/local/etc/php/conf.d/xdebug.off /usr/local/etc/php/conf.d/xdebug.ini && pkill -o -USR2 php-fpm" > /usr/bin/xon && chmod +x /usr/bin/xon  \
+    && echo 'PS1="[\$(test -e /usr/local/etc/php/conf.d/xdebug.off && echo XOFF || echo XON)] $HC$FYEL[ $FBLE${debian_chroot:+($debian_chroot)}\u$FYEL: $FBLE\w $FYEL]\\$ $RS"' | tee /etc/bash.bashrc /etc/skel/.bashrc
+
+# INSTALL COMPOSER
+ENV COMPOSER_HOME /usr/local/composer
+# https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
+ENV COMPOSER_ALLOW_SUPERUSER 1
+RUN set -x \
+    && php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+    && php composer-setup.php --install-dir=/usr/bin --filename=composer \
+    && rm composer-setup.php \
+    && bash -c 'echo -e "{ \"config\" : { \"bin-dir\" : \"/usr/local/bin\" } }\n" > /usr/local/composer/composer.json' \
+    && echo "export COMPOSER_HOME=/usr/local/composer" >> /etc/bash.bashrc \
+    && composer global require "hirak/prestissimo:^0.3" --prefer-dist --no-progress --no-suggest --classmap-authoritative;
+
+############ NGINX ############
+
+## INSTALL NGINX (based on the official nginx image)
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends --no-install-suggests -y gnupg1 apt-transport-https ca-certificates \
+  && NGINX_GPGKEY=573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62; \
+  found=''; \
+  for server in \
+    ha.pool.sks-keyservers.net \
+    hkp://keyserver.ubuntu.com:80 \
+    hkp://p80.pool.sks-keyservers.net:80 \
+    pgp.mit.edu \
+  ; do \
+    echo "Fetching GPG key $NGINX_GPGKEY from $server"; \
+    apt-key adv --keyserver "$server" --keyserver-options timeout=10 --recv-keys "$NGINX_GPGKEY" && found=yes && break; \
+  done; \
+  test -z "$found" && echo >&2 "error: failed to fetch GPG key $NGINX_GPGKEY" && exit 1; \
+  echo "deb https://nginx.org/packages/mainline/debian/ stretch nginx" >> /etc/apt/sources.list.d/nginx.list \
+  && apt-get update \
+  && apt-get install --no-install-recommends --no-install-suggests -y \
+      nginx=1.17.0-1~stretch \
+      gettext-base \
+  && apt-get clean \
+  && apt-get autoremove \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+  && ln -sf /dev/stdout /var/log/nginx/access.log \
+  && ln -sf /dev/stderr /var/log/nginx/error.log \
+  && sed -i "s/^user .*/user www-data;/" /etc/nginx/nginx.conf
+
+############# CONFIGURE ############
+#  TWEAK PHP CONFIG
+RUN set -x \
+    && mv $PHP_INI_DIR/php.ini-production $PHP_INI_DIR/php.ini \
+    && rm /usr/local/etc/php-fpm.d/* \
+    && sed -i "s|;error_log = log/php-fpm.log|error_log = /proc/self/fd/2|" /usr/local/etc/php-fpm.conf \
+    && sed -i "s|memory_limit.*|memory_limit = 2048M|" $PHP_INI_DIR/php.ini \
+    && sed -i "s|max_execution_time.*|max_execution_time = 3000|" $PHP_INI_DIR/php.ini \
+    && sed -i "s|upload_max_filesize.*|upload_max_filesize = 32M|" $PHP_INI_DIR/php.ini \
+    && sed -i "s|post_max_size.*|post_max_size = 48M|" $PHP_INI_DIR/php.ini \
+    && sed -i "s|;date.timezone = *|date.timezone = Europe/London|" $PHP_INI_DIR/php.ini \
+    && cp $PHP_INI_DIR/php.ini $PHP_INI_DIR/php-cli.ini
+
+# COPY HTTP POOL CONFIGURATION
+COPY conf.d/php-fpm-www.conf /usr/local/etc/php-fpm.d/www.conf
+
+# COPY HTTP SERVER CONFIGURATION
+COPY conf.d/nginx-default.conf /etc/nginx/conf.d/default.conf
+
+# COPY SUPERVISOR INFRASTRUCTURE CONFIGURATION
+COPY conf.d/supervisor-infrastracture.conf /etc/supervisor/conf.d/infrastructure.conf
+
+RUN set -x \
+   && bash -c 'echo "alias sf=bin/console" >> ~/.bashrc'
+
+EXPOSE 8080
+
+STOPSIGNAL SIGTERM
+
+COPY healthcheck.sh /healthcheck.sh
+HEALTHCHECK CMD (/healthcheck.sh nginx && /healthcheck.sh php_fpm) || exit 1
+
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
