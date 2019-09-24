@@ -5,6 +5,6 @@ if [ $# -lt 1 ]; then
   exit 1;
 fi
 
-curl --silent --no-buffer \
+curl -u dummy:dummy --silent --no-buffer \
     http://localhost:9001/RPC2 --data "<?xml version=\"1.0\"?><methodCall><methodName>supervisor.getProcessInfo</methodName><params><param><value>$1</value></param></params></methodCall>" \
     | grep -q "STARTING\|RUNNING"
