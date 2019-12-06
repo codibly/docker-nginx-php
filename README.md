@@ -10,7 +10,7 @@ docker pull codibly/php:7.3
 ```
 
 available versions:
-* 7.3
+* 7.4
 
 ### Run
 Type
