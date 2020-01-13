@@ -43,7 +43,8 @@ RUN set -x \
         procps \
         vim iputils-ping curl iproute2 \
         #
-        supervisor
+        supervisor \
+        cron
 
 # INSTALL PHP EXTENSIONS VIA docker-php-ext-install SCRIPT
 RUN docker-php-ext-install \
