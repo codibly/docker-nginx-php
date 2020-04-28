@@ -1,4 +1,4 @@
-FROM php:7.4.3-fpm
+FROM php:7.4.5-fpm
 
 MAINTAINER Codibly <office@codibly.com>
 
@@ -44,7 +44,9 @@ RUN set -x \
         vim iputils-ping curl iproute2 \
         #
         supervisor \
-        cron
+        cron \
+        # for rabbit-query
+        librabbitmq-dev
 
 # INSTALL PHP EXTENSIONS VIA docker-php-ext-install SCRIPT
 RUN docker-php-ext-install \
@@ -88,6 +90,10 @@ RUN set -x \
     # turn off xdebug as default
     && mv /usr/local/etc/php/conf.d/xdebug.ini /usr/local/etc/php/conf.d/xdebug.off  \
     && echo 'PS1="[\$(test -e /usr/local/etc/php/conf.d/xdebug.off && echo XOFF || echo XON)] $HC$FYEL[ $FBLE${debian_chroot:+($debian_chroot)}\u$FYEL: $FBLE\w $FYEL]\\$ $RS"' | tee /etc/bash.bashrc /etc/skel/.bashrc
+
+RUN set -x \
+    && pecl install amqp \
+    && docker-php-ext-enable amqp
 
 # INSTALL COMPOSER
 ENV COMPOSER_HOME /usr/local/composer
