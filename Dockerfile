@@ -1,4 +1,4 @@
-FROM php:7.4.5-fpm
+FROM php:7.4.6-fpm
 
 MAINTAINER Codibly <office@codibly.com>
 
@@ -128,7 +128,7 @@ RUN set -x \
   echo "deb https://nginx.org/packages/mainline/debian/ stretch nginx" >> /etc/apt/sources.list.d/nginx.list \
   && apt-get update \
   && apt-get install --no-install-recommends --no-install-suggests -y \
-      nginx=1.17.5-1~stretch \
+      nginx=1.17.9-1~stretch \
       gettext-base \
   && apt-get clean \
   && apt-get autoremove \
