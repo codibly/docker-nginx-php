@@ -1,4 +1,4 @@
-FROM php:7.4.6-fpm
+FROM php:7.4.12-fpm
 
 MAINTAINER Codibly <office@codibly.com>
 
@@ -83,7 +83,7 @@ COPY scripts/xon.sh /usr/bin/xon
 # INSTALL XDEBUG
 RUN set -x \
     && pecl install xdebug-beta \
-    && bash -c 'echo -e "\n[xdebug]\nzend_extension=xdebug.so\nxdebug.remote_enable=1\nxdebug.remote_connect_back=0\nxdebug.remote_autostart=1\nxdebug.remote_host=" >> /usr/local/etc/php/conf.d/xdebug.ini' \
+    && bash -c 'echo -e "\n[xdebug]\nzend_extension=xdebug.so\nxdebug.remote_enable=1\nxdebug.remote_connect_back=0\nxdebug.remote_autostart=1\nxdebug.remote_port=9000\nxdebug.remote_host=" >> /usr/local/etc/php/conf.d/xdebug.ini' \
     # Add global functions for turn on/off xdebug
     && chmod +x /usr/bin/xoff \
     && chmod +x /usr/bin/xon \
@@ -136,6 +136,13 @@ RUN set -x \
   && ln -sf /dev/stdout /var/log/nginx/access.log \
   && ln -sf /dev/stderr /var/log/nginx/error.log \
   && sed -i "s/^user .*/user www-data;/" /etc/nginx/nginx.conf
+
+# install dockerize - useful tool to check if other sevices are ready to use (eg. db, queue)
+RUN set -x \
+   && DOCKERIZE_VERSION=v0.6.1; \
+   && curl https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz -L --output dockerize.tar.gz \
+   && tar -C /usr/local/bin -xzvf dockerize.tar.gz \
+   && rm dockerize.tar.gz
 
 ############# CONFIGURE ############
 #  TWEAK PHP CONFIG
