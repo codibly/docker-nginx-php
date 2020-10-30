@@ -140,8 +140,8 @@ RUN set -x \
 # install dockerize - useful tool to check if other sevices are ready to use (eg. db, queue)
 RUN set -x \
    && DOCKERIZE_VERSION=v0.6.1; \
-   && curl https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz -L --output dockerize.tar.gz
-   && tar -C /usr/local/bin -xzvf dockerize.tar.gz
+   && curl https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz -L --output dockerize.tar.gz \
+   && tar -C /usr/local/bin -xzvf dockerize.tar.gz \
    && rm dockerize.tar.gz
 
 ############# CONFIGURE ############
