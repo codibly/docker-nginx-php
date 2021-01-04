@@ -1,4 +1,4 @@
-FROM php:7.4.12-fpm
+FROM php:8.0.0-fpm
 
 MAINTAINER Codibly <office@codibly.com>
 
@@ -49,7 +49,9 @@ RUN set -x \
         librabbitmq-dev
 
 # INSTALL PHP EXTENSIONS VIA docker-php-ext-install SCRIPT
-RUN docker-php-ext-install \
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/install-php-extensions
+RUN install-php-extensions \
+  amqp \
   bcmath \
   calendar \
   ctype \
@@ -60,7 +62,6 @@ RUN docker-php-ext-install \
   ftp \
   gettext \
   gd \
-#  hash \
   iconv \
   intl \
   mbstring \
@@ -90,10 +91,6 @@ RUN set -x \
     # turn off xdebug as default
     && mv /usr/local/etc/php/conf.d/xdebug.ini /usr/local/etc/php/conf.d/xdebug.off  \
     && echo 'PS1="[\$(test -e /usr/local/etc/php/conf.d/xdebug.off && echo XOFF || echo XON)] $HC$FYEL[ $FBLE${debian_chroot:+($debian_chroot)}\u$FYEL: $FBLE\w $FYEL]\\$ $RS"' | tee /etc/bash.bashrc /etc/skel/.bashrc
-
-RUN set -x \
-    && pecl install amqp \
-    && docker-php-ext-enable amqp
 
 # INSTALL COMPOSER
 ENV COMPOSER_HOME /usr/local/composer
