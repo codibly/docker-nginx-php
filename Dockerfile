@@ -1,4 +1,4 @@
-FROM php:7.4.12-fpm
+FROM php:7.4.21-fpm
 
 MAINTAINER Codibly <office@codibly.com>
 
@@ -94,6 +94,10 @@ RUN set -x \
 RUN set -x \
     && pecl install amqp \
     && docker-php-ext-enable amqp
+
+# tool for code coverage analysis (it's turned off by default)
+RUN set -x \
+    && pecl install pcov
 
 # INSTALL COMPOSER
 ENV COMPOSER_HOME /usr/local/composer
