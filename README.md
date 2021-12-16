@@ -1,16 +1,13 @@
 ## PHP with fpm and nginx 
 PHP docker image based on official one with pre-installed extensions and tools.
-Additionally we added here nginx with listening on 8080 port.
+Additionally, we added here nginx with listening on 8080 port.
 
 
 ### Download
 Grab it by running
 ```
-docker pull codibly/php:7.4.1
+docker pull codibly/nginx-php:8.0.13
 ```
-
-available versions:
-* 7.4.1
 
 ### Run
 Type
