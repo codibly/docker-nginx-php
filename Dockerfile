@@ -1,4 +1,4 @@
-FROM php:8.1.0-fpm
+FROM php:8.1.3-fpm
 
 MAINTAINER Codibly <office@codibly.com>
 
@@ -83,7 +83,7 @@ COPY scripts/xon.sh /usr/bin/xon
 
 # INSTALL XDEBUG
 RUN set -x \
-    && pecl install xdebug-3.1.2 \
+    && pecl install xdebug-3.1.3 \
     && bash -c 'echo -e "\n[xdebug]\nzend_extension=xdebug.so\nxdebug.mode=debug\nxdebug.start_with_request=yes\nxdebug.client_port=9003\nxdebug.client_host=" >> /usr/local/etc/php/conf.d/xdebug.ini' \
     # add global functions to turn xdebug on/off
     && chmod +x /usr/bin/xoff \
