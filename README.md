@@ -6,7 +6,7 @@ Additionally, we added here nginx with listening on 8080 port.
 ### Download
 Grab it by running
 ```
-docker pull codibly/nginx-php:8.0.13
+docker pull codibly/nginx-php:8.0.16
 ```
 
 ### Run
