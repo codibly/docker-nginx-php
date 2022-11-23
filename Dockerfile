@@ -1,4 +1,4 @@
-FROM php:8.1.12-fpm
+FROM php:8.1.9-fpm
 
 MAINTAINER Codibly <office@codibly.com>
 
