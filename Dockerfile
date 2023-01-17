@@ -41,7 +41,7 @@ RUN set -x \
         htop \
         # for pkill
         procps \
-        vim iputils-ping curl iproute2 \
+        vim iputils-ping curl \
         # for controlling system processes
         supervisor \
         cron \
@@ -83,7 +83,7 @@ COPY scripts/xon.sh /usr/bin/xon
 
 # INSTALL XDEBUG
 RUN set -x \
-    && pecl install xdebug-3.1.3 \
+    && pecl install xdebug-3.2.0 \
     && bash -c 'echo -e "\n[xdebug]\nzend_extension=xdebug.so\nxdebug.mode=debug\nxdebug.start_with_request=yes\nxdebug.client_port=9003\nxdebug.client_host=" >> /usr/local/etc/php/conf.d/xdebug.ini' \
     # add global functions to turn xdebug on/off
     && chmod +x /usr/bin/xoff \
