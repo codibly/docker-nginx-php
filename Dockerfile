@@ -44,9 +44,7 @@ RUN set -x \
         vim iputils-ping curl \
         # for controlling system processes
         supervisor \
-        cron \
-        # for rabbit-query
-        librabbitmq-dev
+        cron
 
 # INSTALL PHP EXTENSIONS VIA docker-php-ext-install SCRIPT
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/install-php-extensions
@@ -68,7 +66,6 @@ RUN install-php-extensions \
   opcache \
   pcntl \
   pdo \
-  pdo_pgsql \
   pdo_mysql \
   posix \
   session \
@@ -83,7 +80,7 @@ COPY scripts/xon.sh /usr/bin/xon
 
 # INSTALL XDEBUG
 RUN set -x \
-    && pecl install xdebug-3.2.0 \
+    && pecl install xdebug-3.2.1 \
     && bash -c 'echo -e "\n[xdebug]\nzend_extension=xdebug.so\nxdebug.mode=debug\nxdebug.start_with_request=yes\nxdebug.client_port=9003\nxdebug.client_host=" >> /usr/local/etc/php/conf.d/xdebug.ini' \
     # add global functions to turn xdebug on/off
     && chmod +x /usr/bin/xoff \
@@ -126,6 +123,10 @@ RUN set -x \
   && apt-get install --no-install-recommends --no-install-suggests -y \
       nginx=1.19.6-1~stretch \
       gettext-base \
+      ghostscript \
+      # dependencies for docs generator (mkdocs)
+      python3-pip python-setuptools \
+      && pip install mkdocs \
   && apt-get clean \
   && apt-get autoremove \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
@@ -146,11 +147,11 @@ RUN set -x \
     && mv $PHP_INI_DIR/php.ini-production $PHP_INI_DIR/php.ini \
     && rm /usr/local/etc/php-fpm.d/* \
     && sed -i "s|;error_log = log/php-fpm.log|error_log = /proc/self/fd/2|" /usr/local/etc/php-fpm.conf \
-    && sed -i "s|memory_limit.*|memory_limit = 2048M|" $PHP_INI_DIR/php.ini \
+    && sed -i "s|memory_limit.*|memory_limit = 8192M|" $PHP_INI_DIR/php.ini \
     && sed -i "s|max_execution_time.*|max_execution_time = 3000|" $PHP_INI_DIR/php.ini \
     && sed -i "s|upload_max_filesize.*|upload_max_filesize = 32M|" $PHP_INI_DIR/php.ini \
     && sed -i "s|post_max_size.*|post_max_size = 48M|" $PHP_INI_DIR/php.ini \
-    && sed -i "s|;date.timezone = *|date.timezone = Europe/London|" $PHP_INI_DIR/php.ini \
+    && sed -i "s|;date.timezone = *|date.timezone = UTC|" $PHP_INI_DIR/php.ini \
     && cp $PHP_INI_DIR/php.ini $PHP_INI_DIR/php-cli.ini
 
 # COPY HTTP POOL CONFIGURATION
