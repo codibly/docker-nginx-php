@@ -49,7 +49,6 @@ RUN set -x \
 # INSTALL PHP EXTENSIONS VIA docker-php-ext-install SCRIPT
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/install-php-extensions
 RUN install-php-extensions \
-  amqp \
   bcmath \
   calendar \
   ctype \
