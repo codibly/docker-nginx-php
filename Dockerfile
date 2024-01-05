@@ -1,4 +1,4 @@
-FROM php:8.1.9-fpm
+FROM php:8.3.1-fpm
 
 MAINTAINER Codibly <office@codibly.com>
 
@@ -44,7 +44,14 @@ RUN set -x \
         vim iputils-ping curl \
         # for controlling system processes
         supervisor \
-        cron
+        cron \
+        gettext-base \
+        # for merging PDF docs
+        ghostscript \
+        # for docs generator (mkdocs)
+        python3-pip \
+        python3-setuptools \
+        && pip install mkdocs --break-system-packages
 
 # INSTALL PHP EXTENSIONS VIA docker-php-ext-install SCRIPT
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/install-php-extensions
@@ -79,7 +86,7 @@ COPY scripts/xon.sh /usr/bin/xon
 
 # INSTALL XDEBUG
 RUN set -x \
-    && pecl install xdebug-3.2.1 \
+    && pecl install xdebug-3.3.1 \
     && bash -c 'echo -e "\n[xdebug]\nzend_extension=xdebug.so\nxdebug.mode=debug\nxdebug.start_with_request=yes\nxdebug.client_port=9003\nxdebug.client_host=" >> /usr/local/etc/php/conf.d/xdebug.ini' \
     # add global functions to turn xdebug on/off
     && chmod +x /usr/bin/xoff \
@@ -104,28 +111,11 @@ RUN set -x \
 ## INSTALL NGINX (based on the official nginx image)
 RUN set -x \
   && apt-get update \
-  && apt-get install --no-install-recommends --no-install-suggests -y gnupg1 apt-transport-https ca-certificates \
-  && NGINX_GPGKEY=573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62; \
-  found=''; \
-  for server in \
-    ha.pool.sks-keyservers.net \
-    hkp://keyserver.ubuntu.com:80 \
-    hkp://p80.pool.sks-keyservers.net:80 \
-    pgp.mit.edu \
-  ; do \
-    echo "Fetching GPG key $NGINX_GPGKEY from $server"; \
-    apt-key adv --keyserver "$server" --keyserver-options timeout=10 --recv-keys "$NGINX_GPGKEY" && found=yes && break; \
-  done; \
-  test -z "$found" && echo >&2 "error: failed to fetch GPG key $NGINX_GPGKEY" && exit 1; \
-  echo "deb https://nginx.org/packages/mainline/debian/ stretch nginx" >> /etc/apt/sources.list.d/nginx.list \
+  && apt-get install --no-install-recommends --no-install-suggests -y gnupg1 gnupg2 ca-certificates debian-archive-keyring \
+  && curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null \
+  && echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/mainline/debian bookworm nginx" | tee /etc/apt/sources.list.d/nginx.list \
   && apt-get update \
-  && apt-get install --no-install-recommends --no-install-suggests -y \
-      nginx=1.19.6-1~stretch \
-      gettext-base \
-      ghostscript \
-      # dependencies for docs generator (mkdocs)
-      python3-pip python-setuptools \
-      && pip install mkdocs \
+  && apt-get install --no-install-recommends --no-install-suggests -y nginx \
   && apt-get clean \
   && apt-get autoremove \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
@@ -135,7 +125,7 @@ RUN set -x \
 
 # install dockerize - useful tool to check if other sevices are ready to use (eg. db, queue)
 RUN set -x \
-    && DOCKERIZE_VERSION=v0.6.1; \
+    && DOCKERIZE_VERSION=v0.7.0; \
        curl https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz -L --output dockerize.tar.gz \
     && tar -C /usr/local/bin -xzvf dockerize.tar.gz \
     && rm dockerize.tar.gz
